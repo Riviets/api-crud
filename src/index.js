@@ -2,12 +2,18 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
+import './styles/styles.css'
 import WorkersComponent from './ui/WorkersComponent';
+import { Provider } from 'react-redux';
+import store from './store';
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <WorkersComponent />
+    <Provider store={store}>
+      <WorkersComponent />
+    </Provider>
   </React.StrictMode>
 );
 

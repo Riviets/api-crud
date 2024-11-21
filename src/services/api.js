@@ -11,3 +11,17 @@ export async function fetchWorkers() {
     return []
   }
 }
+
+export async function updateWorker(workerId, workerData) {
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/workers/${workerId}`,
+        workerData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating worker:", error);
+      throw error;
+    }
+  }
+  
