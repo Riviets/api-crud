@@ -24,4 +24,23 @@ export async function updateWorker(workerId, workerData) {
       throw error;
     }
   }
+
+  export async function deleteWorker(workerId) {
+    try {
+      await axios.delete(`${API_BASE_URL}/workers/${workerId}`);
+    } catch (error) {
+      console.error("Error deleting worker:", error);
+      throw error;
+    }
+  }
+  
+  export async function addWorker(workerData) {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/workers`, workerData);
+      return response.data;
+    } catch (error) {
+      console.error("Error adding worker:", error);
+      throw error;
+    }
+  }
   

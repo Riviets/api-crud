@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchWorkersAction, updateWorkerAction } from "../store/actions/workerActions";
+import { fetchWorkersAction, updateWorkerAction, deleteWorkerAction, addWorkerAction } from "../store/actions/workerActions";
 
 function WorkersComponent() {
   const dispatch = useDispatch();
-  const { workers, loading, error } = useSelector(state => {
-    console.log('Current Redux State:', state);
-    return state.workers;
-  });
-  
+  const { workers, loading, error } = useSelector((state) => state.workers);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
-  
+  const [newWorkerData, setNewWorkerData] = useState({ name: "", wage: "", email: "" });
+
   useEffect(() => {
     dispatch(fetchWorkersAction());
   }, [dispatch]);
@@ -21,9 +20,20 @@ function WorkersComponent() {
     setSelectedWorker(worker);
   };
 
+  const handleDelete = (workerId) => {
+    if (window.confirm('Are you sure you want to delete this worker?')) {
+      dispatch(deleteWorkerAction(workerId));
+    }
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedWorker(null);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setNewWorkerData({ name: "", wage: "", email: "" });
   };
 
   const handleSave = (workerId, updatedData) => {
@@ -32,44 +42,76 @@ function WorkersComponent() {
     setSelectedWorker(null);
   };
 
-  return (
-    <div className="workers">
-      <div className="container">
-        <h1 className="workers__title title">Workers</h1>
-        {loading ? (
-          <p className="loading-message">Loading...</p>
-        ) : (
-          <ul className="workers__list">
-            {workers.map((worker) => (
-              <li className="workers__item" key={worker.id}>
-                <p className="workers__item-name">{worker.name}</p>
-                <p className="workers__item-wage">{worker.wage}</p>
-                <p className="workers__item-email">{worker.email}</p>
-                
-                <div className="workers__item-buttons">
-                  <button 
-                    className="workers__item-btn" 
-                    onClick={() => handleEdit(worker)}
-                  >
-                    Edit
-                  </button>
+  const handleAddNewWorker = (e) => {
+    e.preventDefault();
+    dispatch(addWorkerAction(newWorkerData));
+    setIsAddModalOpen(false);
+    setNewWorkerData({ name: "", wage: "", email: "" });
+  };
   
-                  <button className="workers__item-btn">
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-       {isModalOpen && (
-          <Modal
-            worker={selectedWorker}
-            onClose={closeModal}
-            onSave={handleSave}
-          />
-        )}
-      </div>
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewWorkerData((prevData) => ({
+      ...prevData,
+      [name]: value
+    }));
+  };
+
+  return (
+    <div className="container my-5">
+      <h1 className="text-center mb-4">Workers</h1>
+      <button
+        className="btn btn-success mb-3"
+        onClick={() => setIsAddModalOpen(true)} // Відкриває модальне вікно для додавання
+      >
+        Add New Worker
+      </button>
+      {loading ? (
+        <div className="text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="alert alert-danger text-center">{error}</div>
+      ) : (
+        <ul className="list-group">
+          {workers.map((worker) => (
+            <li className="list-group-item d-flex justify-content-between align-items-center" key={worker.id}>
+              <div>
+                <h5 className="mb-1">{worker.name}</h5>
+                <p className="mb-1">Wage: ${worker.wage}</p>
+                <p className="mb-1">Email: {worker.email}</p>
+              </div>
+              <div>
+                <button
+                  className="btn btn-primary btn-sm me-2"
+                  onClick={() => handleEdit(worker)}
+                >
+                  Edit
+                </button>
+                <button 
+                  className="workers__item-btn"
+                  onClick={() => handleDelete(worker.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {isModalOpen && (
+        <Modal worker={selectedWorker} onClose={closeModal} onSave={handleSave} />
+      )}
+      {isAddModalOpen && (
+        <AddWorkerModal
+          newWorkerData={newWorkerData}
+          handleInputChange={handleInputChange}
+          handleAddNewWorker={handleAddNewWorker}
+          closeAddModal={closeAddModal}
+        />
+      )}
     </div>
   );
 }
@@ -95,53 +137,113 @@ const Modal = ({ worker, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal">
-      <div className="modal__content">
-        <h2 className="modal__title">Edit Worker</h2>
-        <form className="modal__form" onSubmit={handleSubmit}>
-          <label className="modal__label">
-            <span className="modal__label-text">Name:</span>
-            <input
-              type="text"
-              name="name"
-              className="modal__input"
-              value={formData.name}
-              onChange={handleChange}
-            />
-          </label>
-          <label className="modal__label">
-            <span className="modal__label-text">Wage:</span>
-            <input
-              type="number"
-              name="wage"
-              className="modal__input"
-              value={formData.wage}
-              onChange={handleChange}
-            />
-          </label>
-          <label className="modal__label">
-            <span className="modal__label-text">Email:</span>
-            <input
-              type="email"
-              name="email"
-              className="modal__input"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </label>
-          <div className="modal__buttons">
-            <button
-              type="button"
-              className="modal__button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="modal__button">
-              Save
-            </button>
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">Edit Worker</h5>
+            <button type="button" className="btn-close" aria-label="Close" onClick={onClose}></button>
           </div>
-        </form>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              <div className="mb-3">
+                <label className="form-label">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-control"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Wage</label>
+                <input
+                  type="number"
+                  name="wage"
+                  className="form-control"
+                  value={formData.wage}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddWorkerModal = ({ newWorkerData, handleInputChange, handleAddNewWorker, closeAddModal }) => {
+  return (
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">Add New Worker</h5>
+            <button type="button" className="btn-close" aria-label="Close" onClick={closeAddModal}></button>
+          </div>
+          <form onSubmit={handleAddNewWorker}>
+            <div className="modal-body">
+              <div className="mb-3">
+                <label className="form-label">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-control"
+                  value={newWorkerData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Wage</label>
+                <input
+                  type="number"
+                  name="wage"
+                  className="form-control"
+                  value={newWorkerData.wage}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  value={newWorkerData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={closeAddModal}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Add
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

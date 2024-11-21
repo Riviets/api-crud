@@ -1,15 +1,15 @@
-import { configureStore } from '@reduxjs/toolkit'
-import { composeWithDevTools } from 'redux-devtools-extension'
-import { thunk } from 'redux-thunk'
-import workerReducer from './reducers/workerReducer'
+import { configureStore } from '@reduxjs/toolkit';
+import {thunk} from 'redux-thunk';
+import workerReducer from './reducers/workerReducer';
+
 
 const store = configureStore({
   reducer: {
-    workers: workerReducer
+    workers: workerReducer,
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware().concat(thunk),
-  devTools: true 
-})
+  devTools: process.env.NODE_ENV !== 'production',
+});
 
-export default store
+export default store;
